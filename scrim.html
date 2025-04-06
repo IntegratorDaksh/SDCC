@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess Club Elo System</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script defer src="https://unpkg.com/alpinejs@3.10.5/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 p-6" x-data="chessApp()">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Chess Club Elo System</h1>
+
+    <!-- Login Panel -->
+    <template x-if="!loggedIn">
+      <div class="bg-white p-4 rounded shadow mb-6">
+        <h2 class="text-xl font-semibold mb-2">Login</h2>
+        <input type="text" x-model="loginUsername" placeholder="Username" class="border p-2 w-full mb-2">
+        <input type="password" x-model="loginPassword" placeholder="Password" class="border p-2 w-full mb-2">
+        <button class="bg-blue-500 text-white px-4 py-2 rounded" @click="login">Login</button>
+      </div>
+    </template>
+
+    <!-- Player Dashboard -->
+    <template x-if="loggedIn">
+      <div>
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold">Welcome, <span x-text="currentUser"></span></h2>
+          <button class="text-sm text-red-600" @click="logout">Logout</button>
+        </div>
+
+        <!-- Player List -->
+        <div class="bg-white p-4 rounded shadow mb-6">
+          <h3 class="text-lg font-semibold mb-2">Player Ratings</h3>
+          <ul>
+            <template x-for="player in players" :key="player.name">
+              <li class="border-b py-1"> <span x-text="player.name"></span>: <strong x-text="player.rating"></strong> </li>
+            </template>
+          </ul>
+        </div>
+
+        <!-- Scrim Submission Form -->
+        <div class="bg-white p-4 rounded shadow mb-6">
+          <h3 class="text-lg font-semibold mb-2">Submit Scrim Result</h3>
+          <input type="text" x-model="scrim.opponent" placeholder="Opponent Name" class="border p-2 w-full mb-2">
+          <select x-model="scrim.result" class="border p-2 w-full mb-2">
+            <option value="">Select Result</option>
+            <option value="win">Win</option>
+            <option value="loss">Loss</option>
+            <option value="draw">Draw</option>
+          </select>
+          <input type="file" @change="handleFileUpload" class="mb-2">
+          <button class="bg-green-500 text-white px-4 py-2 rounded" @click="submitScrim">Submit</button>
+        </div>
+
+        <!-- Admin Panel -->
+        <template x-if="isAdmin">
+          <div class="bg-white p-4 rounded shadow">
+            <h3 class="text-lg font-semibold mb-2">Pending Scrims (Admin Panel)</h3>
+            <ul>
+              <template x-for="(scrim, index) in pendingScrims" :key="index">
+                <li class="border-b py-2">
+                  <div class="flex justify-between">
+                    <div>
+                      <p><strong x-text="scrim.user"></strong> vs <strong x-text="scrim.opponent"></strong> - <em x-text="scrim.result"></em></p>
+                      <p class="text-sm text-gray-500">Screenshot: <a :href="scrim.screenshot" target="_blank" class="text-blue-600 underline">View</a></p>
+                    </div>
+                    <div>
+                      <button class="bg-blue-500 text-white px-2 py-1 rounded mr-1" @click="approveScrim(index)">Approve</button>
+                      <button class="bg-red-500 text-white px-2 py-1 rounded" @click="rejectScrim(index)">Reject</button>
+                    </div>
+                  </div>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+
+  <script>
+    function chessApp() {
+      return {
+        players: [
+          { name: 'Alice', rating: 70 },
+          { name: 'Bob', rating: 85 },
+          { name: 'Charlie', rating: 50 }
+        ],
+        pendingScrims: [],
+        scrim: { opponent: '', result: '', screenshot: '' },
+        currentUser: '',
+        loginUsername: '',
+        loginPassword: '',
+        loggedIn: false,
+
+        handleFileUpload(event) {
+          const file = event.target.files[0];
+          if (file) {
+            this.scrim.screenshot = URL.createObjectURL(file);
+          }
+        },
+
+        submitScrim() {
+          this.pendingScrims.push({
+            user: this.currentUser,
+            opponent: this.scrim.opponent,
+            result: this.scrim.result,
+            screenshot: this.scrim.screenshot
+          });
+          this.scrim = { opponent: '', result: '', screenshot: '' };
+        },
+
+        approveScrim(index) {
+          const scrim = this.pendingScrims[index];
+          const player = this.players.find(p => p.name === scrim.user);
+          if (player) {
+            if (scrim.result === 'win') player.rating += 5;
+            if (scrim.result === 'loss') player.rating -= 3;
+            if (scrim.result === 'draw') player.rating += 1;
+          }
+          this.pendingScrims.splice(index, 1);
+        },
+
+        rejectScrim(index) {
+          this.pendingScrims.splice(index, 1);
+        },
+
+        login() {
+          const admins = ['admin'];
+          const passwords = { 'admin': 'admin123', 'Alice': 'pass1', 'Bob': 'pass2', 'Charlie': 'pass3' };
+
+          if (passwords[this.loginUsername] === this.loginPassword) {
+            this.loggedIn = true;
+            this.currentUser = this.loginUsername;
+          } else {
+            alert('Invalid login');
+          }
+        },
+
+        logout() {
+          this.loggedIn = false;
+          this.currentUser = '';
+        },
+
+        get isAdmin() {
+          return this.currentUser === 'admin';
+        }
+      }
+    }
+  </script>
+</body>
+</html>
