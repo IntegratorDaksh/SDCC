@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chess Club Rating Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background: #f9f9f9;
+    }
+    h2 {
+      color: #333;
+    }
+    .section {
+      margin-bottom: 40px;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ddd;
+    }
+    label, input {
+      display: block;
+      margin: 8px 0;
+    }
+    input[type="number"] {
+      width: 100px;
+      padding: 5px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 15px;
+      background: #007BFF;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .result {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Chess Club Rating System</h1>
+
+  <div class="section">
+    <h2>1. Rating Change After Match</h2>
+    <label>Your Rating (R1):</label>
+    <input type="number" id="r1" step="0.1">
+
+    <label>Opponent's Rating (R2):</label>
+    <input type="number" id="r2" step="0.1">
+
+    <label>Match Result (1 = win, 0.5 = draw, 0 = loss):</label>
+    <input type="number" id="s" step="0.1">
+
+    <button onclick="calculateRatingChange()">Calculate New Rating</button>
+    <div class="result" id="changeResult"></div>
+  </div>
+
+  <div class="section">
+    <h2>2. Initial Rating Generation</h2>
+
+    <div id="eliteInputs"></div>
+
+    <label>Number of Tournaments Played:</label>
+    <input type="number" id="tournaments">
+
+    <button onclick="generateInitialRating()">Generate Initial Rating</button>
+    <div class="result" id="initialResult"></div>
+  </div>
+
+  <script>
+    // Add 3 elite player input fields
+    const eliteContainer = document.getElementById("eliteInputs");
+    for (let i = 1; i <= 3; i++) {
+      eliteContainer.innerHTML += `
+        <label>Elite Player ${i} Rating:</label>
+        <input type="number" id="e${i}" step="0.1">
+        <label>Result vs Elite Player ${i} (1, 0.5, or 0):</label>
+        <input type="number" id="s${i}" step="0.1">
+      `;
+    }
+
+    function calculateRatingChange() {
+      const R1 = parseFloat(document.getElementById("r1").value);
+      const R2 = parseFloat(document.getElementById("r2").value);
+      const S = parseFloat(document.getElementById("s").value);
+      const D = 15;
+
+      const E = 1 / (1 + Math.pow(10, (R2 - R1) / D));
+
+      let K;
+      if (R1 < 50) K = 10;
+      else if (R1 < 75) K = 8;
+      else if (R1 < 90) K = 6;
+      else K = 4;
+
+      let R_new = R1 + K * (S - E);
+      R_new = Math.max(0, Math.min(100, R_new));
+
+      document.getElementById("changeResult").innerText =
+        `Expected Score: ${E.toFixed(4)}\nK-Factor: ${K}\nNew Rating: ${R_new.toFixed(2)}`;
+    }
+
+    function generateInitialRating() {
+      const D = 15;
+      const K0 = 20;
+      const R_avg = 45;
+      let total = 0;
+
+      for (let i = 1; i <= 3; i++) {
+        const Ei = parseFloat(document.getElementById(`e${i}`).value);
+        const Si = parseFloat(document.getElementById(`s${i}`).value);
+        const E_exp = 1 / (1 + Math.pow(10, (Ei - R_avg) / D));
+        const gain = R_avg + K0 * (Si - E_exp);
+        total += gain;
+      }
+
+      const R_base = total / 3;
+
+      const T = parseInt(document.getElementById("tournaments").value);
+      const R_exp = Math.min(8, 2 * T);
+
+      let R0 = R_base + R_exp;
+      R0 = Math.max(0, Math.min(100, R0));
+
+      document.getElementById("initialResult").innerText =
+        `Initial Rating: ${R0.toFixed(2)}`;
+    }
+  </script>
+</body>
+</html>
